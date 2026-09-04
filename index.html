@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Danish's Breakeven App</title>
+
+<!--
+  Chart.js is used for the history chart.
+  Chart.js is distributed under the MIT License:
+  https://github.com/chartjs/Chart.js
+-->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f6f8;
+  color: #222;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 32px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.10);
+}
+
+h1 {
+  margin: 0 0 8px;
+  text-align: center;
+  font-size: 28px;
+}
+
+.subtitle {
+  margin: 0 0 28px;
+  text-align: center;
+  color: #666;
+  line-height: 1.5;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #cfd5dc;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+}
+
+input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+button {
+  border: none;
+  border-radius: 8px;
+  padding: 13px 16px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.calculate-button {
+  width: 100%;
+  background: #2563eb;
+  color: white;
+  margin-top: 4px;
+}
+
+.calculate-button:hover {
+  background: #1d4ed8;
+}
+
+.result {
+  display: none;
+  margin-top: 24px;
+  padding: 20px;
+  border-radius: 10px;
+  background: #eef5ff;
+  text-align: center;
+}
+
+.result-label {
+  margin: 0 0 6px;
+  color: #555;
+  font-size: 15px;
+}
+
+.result-value {
+  margin: 0;
+  font-size: 34px;
+  font-weight: 700;
+  color: #174ea6;
+}
+
+.result-note {
+  margin: 8px 0 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.error {
+  display: none;
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fff1f2;
+  color: #b42318;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.formula {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+  color: #666;
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.history-section {
+  display: none;
+  margin-top: 32px;
+  padding-top: 28px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.history-header h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.clear-button {
+  flex: 0 0 auto;
+  background: #eef1f5;
+  color: #333;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.clear-button:hover {
+  background: #e1e6ec;
+}
+
+.chart-card {
+  position: relative;
+  width: 100%;
+  height: 360px;
+  margin-bottom: 24px;
+}
+
+.chart-help {
+  margin: -8px 0 18px;
+  color: #666;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+table {
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th,
+td {
+  padding: 11px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: right;
+  white-space: nowrap;
+}
+
+th:first-child,
+td:first-child {
+  text-align: center;
+}
+
+thead th {
+  background: #f7f9fb;
+  color: #444;
+  font-weight: 700;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: #fafcff;
+}
+
+@media (max-width: 760px) {
+  body {
+    padding: 16px;
+  }
+
+  .container {
+    padding: 24px 20px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  h1 {
+    font-size: 24px;
+  }
+
+  .result-value {
+    font-size: 30px;
+  }
+
+  .chart-card {
+    height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 10px;
+  }
+
+  .container {
+    padding: 22px 16px;
+    border-radius: 10px;
+  }
+
+  .history-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .clear-button {
+    width: 100%;
+  }
+
+  .chart-card {
+    height: 270px;
+  }
+
+  .subtitle {
+    margin-bottom: 22px;
+  }
+}
+</style>
+</head>
+
+<body>
+<main class="container">
+  <h1>Danish's Breakeven App</h1>
+
+  <p class="subtitle">
+    Enter your business costs and selling price to calculate the number of units
+    needed to break even. Each calculation is added to the scenario history below.
+  </p>
+
+  <form id="breakEvenForm">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="fixedCost">Fixed Cost ($)</label>
+        <input
+          type="number"
+          id="fixedCost"
+          min="0"
+          step="0.01"
+          placeholder="e.g., 10000"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="variableCost">Variable Cost per Unit ($)</label>
+        <input
+          type="number"
+          id="variableCost"
+          min="0"
+          step="0.01"
+          placeholder="e.g., 20"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="sellingPrice">Selling Price per Unit ($)</label>
+        <input
+          type="number"
+          id="sellingPrice"
+          min="0.01"
+          step="0.01"
+          placeholder="e.g., 50"
+          required
+        >
+      </div>
+    </div>
+
+    <button class="calculate-button" type="submit">
+      Calculate Break-Even Point
+    </button>
+  </form>
+
+  <div id="errorMessage" class="error" role="alert"></div>
+
+  <section id="result" class="result" aria-live="polite">
+    <p class="result-label">Break-even point</p>
+    <p id="resultValue" class="result-value"></p>
+    <p id="resultNote" class="result-note"></p>
+  </section>
+
+  <div class="formula">
+    Break-even units = Fixed Cost ÷ (Selling Price per Unit − Variable Cost per Unit)
+  </div>
+
+  <section id="historySection" class="history-section">
+    <div class="history-header">
+      <h2>Scenario History</h2>
+      <button id="clearHistoryButton" class="clear-button" type="button">
+        Clear History
+      </button>
+    </div>
+
+    <p class="chart-help">
+      Hover over a point on a laptop, or tap a point on a phone or tablet, to see
+      the fixed cost, variable cost, selling price, and break-even quantity for that scenario.
+    </p>
+
+    <div class="chart-card">
+      <canvas id="historyChart" aria-label="Break-even scenario history chart"></canvas>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Scenario</th>
+            <th>Fixed Cost</th>
+            <th>Variable Cost / Unit</th>
+            <th>Selling Price / Unit</th>
+            <th>Break-Even Units</th>
+          </tr>
+        </thead>
+        <tbody id="historyTableBody"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const form = document.getElementById("breakEvenForm");
+
+const fixedCostInput = document.getElementById("fixedCost");
+const variableCostInput = document.getElementById("variableCost");
+const sellingPriceInput = document.getElementById("sellingPrice");
+
+const result = document.getElementById("result");
+const resultValue = document.getElementById("resultValue");
+const resultNote = document.getElementById("resultNote");
+const errorMessage = document.getElementById("errorMessage");
+
+const historySection = document.getElementById("historySection");
+const historyTableBody = document.getElementById("historyTableBody");
+const clearHistoryButton = document.getElementById("clearHistoryButton");
+const chartCanvas = document.getElementById("historyChart");
+
+const history = [];
+let historyChart = null;
+
+form.addEventListener("submit", function (event) {
+  event.preventDefault();
+
+  result.style.display = "none";
+  errorMessage.style.display = "none";
+
+  const fixedCost = Number(fixedCostInput.value);
+  const variableCost = Number(variableCostInput.value);
+  const sellingPrice = Number(sellingPriceInput.value);
+
+  if (
+    !Number.isFinite(fixedCost) ||
+    !Number.isFinite(variableCost) ||
+    !Number.isFinite(sellingPrice) ||
+    fixedCost < 0 ||
+    variableCost < 0 ||
+    sellingPrice <= 0
+  ) {
+    showError(
+      "Please enter valid non-negative costs and a selling price greater than zero."
+    );
+    return;
+  }
+
+  if (sellingPrice <= variableCost) {
+    showError(
+      "The selling price per unit must be greater than the variable cost per unit for the business to break even."
+    );
+    return;
+  }
+
+  const contributionMargin = sellingPrice - variableCost;
+  const exactBreakEven = fixedCost / contributionMargin;
+  const breakEvenUnits = Math.ceil(exactBreakEven);
+
+  resultValue.textContent =
+    breakEvenUnits.toLocaleString() +
+    (breakEvenUnits === 1 ? " unit" : " units");
+
+  if (fixedCost === 0) {
+    resultNote.textContent =
+      "With no fixed costs, the business is already at the break-even point before selling any units.";
+  } else {
+    resultNote.textContent =
+      "The business must sell at least " +
+      breakEvenUnits.toLocaleString() +
+      " units to cover its fixed and variable costs.";
+  }
+
+  result.style.display = "block";
+
+  const scenario = {
+    number: history.length + 1,
+    fixedCost: fixedCost,
+    variableCost: variableCost,
+    sellingPrice: sellingPrice,
+    breakEvenUnits: breakEvenUnits
+  };
+
+  history.push(scenario);
+
+  updateHistoryTable();
+  updateHistoryChart();
+  historySection.style.display = "block";
+});
+
+clearHistoryButton.addEventListener("click", function () {
+  history.length = 0;
+  historyTableBody.innerHTML = "";
+
+  if (historyChart) {
+    historyChart.destroy();
+    historyChart = null;
+  }
+
+  historySection.style.display = "none";
+});
+
+function showError(message) {
+  errorMessage.textContent = message;
+  errorMessage.style.display = "block";
+}
+
+function formatCurrency(value) {
+  return value.toLocaleString(undefined, {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+function updateHistoryTable() {
+  historyTableBody.innerHTML = "";
+
+  history.forEach(function (scenario) {
+    const row = document.createElement("tr");
+
+    row.innerHTML = `
+      <td>${scenario.number}</td>
+      <td>${formatCurrency(scenario.fixedCost)}</td>
+      <td>${formatCurrency(scenario.variableCost)}</td>
+      <td>${formatCurrency(scenario.sellingPrice)}</td>
+      <td>${scenario.breakEvenUnits.toLocaleString()}</td>
+    `;
+
+    historyTableBody.appendChild(row);
+  });
+}
+
+function updateHistoryChart() {
+  if (typeof Chart === "undefined") {
+    showError(
+      "The chart library could not be loaded. The calculation and history table will still work."
+    );
+    return;
+  }
+
+  const labels = history.map(function (scenario) {
+    return "Scenario " + scenario.number;
+  });
+
+  const breakEvenValues = history.map(function (scenario) {
+    return scenario.breakEvenUnits;
+  });
+
+  if (!historyChart) {
+    historyChart = new Chart(chartCanvas, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: "Break-Even Units",
+            data: breakEvenValues,
+            borderColor: "#2563eb",
+            backgroundColor: "#2563eb",
+            borderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            pointHitRadius: 18,
+            tension: 0.15,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: "nearest",
+          intersect: true
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            displayColors: false,
+            callbacks: {
+              title: function (tooltipItems) {
+                const index = tooltipItems[0].dataIndex;
+                return "Scenario " + history[index].number;
+              },
+              label: function (context) {
+                const scenario = history[context.dataIndex];
+
+                return [
+                  "Fixed Cost: " + formatCurrency(scenario.fixedCost),
+                  "Variable Cost / Unit: " + formatCurrency(scenario.variableCost),
+                  "Selling Price / Unit: " + formatCurrency(scenario.sellingPrice),
+                  "Break-Even: " +
+                    scenario.breakEvenUnits.toLocaleString() +
+                    " units"
+                ];
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: "Scenario"
+            },
+            ticks: {
+              maxRotation: 0,
+              autoSkip: true,
+              maxTicksLimit: 10
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Break-Even Units"
+            }
+          }
+        }
+      }
+    });
+
+    chartCanvas.addEventListener("click", function (event) {
+      const points = historyChart.getElementsAtEventForMode(
+        event,
+        "nearest",
+        { intersect: true },
+        true
+      );
+
+      if (points.length === 0) {
+        return;
+      }
+
+      historyChart.setActiveElements(points);
+      historyChart.tooltip.setActiveElements(points, {
+        x: event.offsetX,
+        y: event.offsetY
+      });
+      historyChart.update();
+    });
+  } else {
+    historyChart.data.labels = labels;
+    historyChart.data.datasets[0].data = breakEvenValues;
+    historyChart.update();
+  }
+}
+</script>
+</body>
+</html>
